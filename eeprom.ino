@@ -22,11 +22,10 @@ void clear_eeprom(int addr_length)
 }
 
 // 从eeprom的相关地址获取ssid以及password内容
-void read_SSID_eeprom(int ssid_addr, int pwd_addr, String &ssid, String &pwd)
+void read_SSID_eeprom(String &ssid, String &pwd)
 {
   ssid = readStringFromEEPROM(EEPROM_SSID_ADDR);
   pwd = readStringFromEEPROM(EEPROM_PASSWORD_ADDR);
-  
   ssid.trim();
   pwd.trim();
 }

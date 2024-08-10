@@ -349,9 +349,9 @@ bool waitForConnect(String SSID, String password)
     {
       // 如果未连接上 WiFi，则等待一段时间再重新检查
       delay(1000);
-      Serial.print("connecting...\n");
-      Serial.println("WiFi Mode:");
-      Serial.println(WiFi.getMode());
+      // Serial.print("connecting...\n");
+      // Serial.println("WiFi Mode:");
+      // Serial.println(WiFi.getMode());
       // 连接时，闪烁
       status = ~status;
       setLEDStatus(status);
@@ -470,6 +470,8 @@ String readStringFromEEPROM(int addr)
 }
 
 static int resetTime = 0;
+String test = "tommybei2";
+String test2 = "tommybei";
 // 初始化，相当于main 函数
 void setup()
 {
@@ -482,19 +484,22 @@ void setup()
 
   // 配置1表示没有配网
   g_config_flag == 1;
-
   // 延迟16s，串口才能有打印
-   delay(16000);
+  delay(15*1000);
+  // 检查是否需要清除EEPROM
+  checkAndResetEEPROM();
 
-
-  // 复位16s后，重新计数
-  EEPROM.write(EEPROM_RST_ADDR, 0);
-  EEPROM.commit();
+  // 当正常启动后，清除复位标志
+  resetResetFlag();
+  // 测试
+  EEPROM.begin(EEPROM_FULL_ADDR);
+  writeStringToEEPROM(EEPROM_SSID_ADDR, test);
+  writeStringToEEPROM(EEPROM_PASSWORD_ADDR, test2);
   // 先从EEPROM读取WIFI相关配置信息
-  read_SSID_eeprom(EEPROM_SSID_ADDR, EEPROM_PASSWORD_ADDR, g_wifiSSID, g_wifiPassword);
-
-  EEPROM.end();
-  Serial.print("start wifi connnect\n");
+  read_SSID_eeprom(g_wifiSSID, g_wifiPassword);
+  Serial.println("g_wifiSSID:" + g_wifiSSID);
+  Serial.println("g_wifiPassword:" + g_wifiPassword);
+  Serial.println("start wifi connnect\n");
   // 初始化 WiFi 连接状态为未连接
   bool wifiConnected = false;
   // 连续连接10s
