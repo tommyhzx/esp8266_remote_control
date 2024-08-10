@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Arduino",
+            "includePath": [
+                "${workspaceFolder}/**",
+                // "/Users/你的用户名/Documents/Arduino/hardware/esp8266com/esp8266/**",
+                // "/Users/你的用户名/Documents/Arduino/libraries/**",
+                "/Users/tommybei/software/arduinoProject/libraries/**",
+                "/Users/tommybei/Documents/Arduino/hardware/esp8266com/esp8266/**",
+                "/Users/tommybei/Documents/Arduino/hardware/**"
+            ],
+            "forcedInclude": [],
+            "intelliSenseMode": "macos-clang-x64",
+            "compilerPath": "/Users/tommybei/Documents/Arduino/hardware/tools/avr/bin/avr-gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
