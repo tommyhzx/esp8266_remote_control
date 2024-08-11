@@ -2,6 +2,42 @@
 void myFunction() {
     Serial.println("Hello from myFunction!");
 }
+/**********************
+ *  等待wifi连接
+ ***********************/
+bool connect_WIFI(String SSID, String password)
+{
+  int LEDstatus = 0;
+
+  startSTA(SSID, password);
+
+  uint32_t startConnectTime = millis();
+  while (millis() - startConnectTime < WIFI_CONNECT_TIMEOUT)
+  {
+    // 检查 WiFi 连接状态
+    if (WiFi.status() == WL_CONNECTED)
+    {
+      // 打印连接成功信息
+      Serial.println("\r\nWiFi connected successfully!");
+      Serial.print("IP Address: ");
+      Serial.println(WiFi.localIP());
+      // 连接成功，LED 灯关闭
+      setLEDStatus(LED_OFF);
+      return true;
+    }
+    else
+    {
+      // 如果未连接上 WiFi，则等待一段时间再重新检查
+      delay(1000);
+      Serial.print("connecting...\n");
+      // 连接时，闪烁
+      LEDstatus = ~LEDstatus;
+      setLEDStatus(LEDstatus);
+    }
+  }
+  Serial.println("wifi connect Faild!");
+  return false;
+}
 /*********************************
 * softAP配网
 *

@@ -327,7 +327,7 @@ void doWiFiTick()
 bool waitForConnect(String SSID, String password)
 {
   bool wifiConnected = false;
-  int status = 0;
+  int LEDstatus = 0;
   startSTA(SSID, password);
   uint32_t startConnectTime = millis();
   while (millis() - startConnectTime < WIFI_CONNECT_TIMEOUT)
@@ -336,6 +336,7 @@ bool waitForConnect(String SSID, String password)
     if (WiFi.status() == WL_CONNECTED)
     {
       wifiConnected = true;
+      // 打印连接成功信息
       Serial.println("\r\nWiFi connected successfully!");
       Serial.print("IP Address: ");
       Serial.println(WiFi.localIP());
@@ -349,12 +350,10 @@ bool waitForConnect(String SSID, String password)
     {
       // 如果未连接上 WiFi，则等待一段时间再重新检查
       delay(1000);
-      // Serial.print("connecting...\n");
-      // Serial.println("WiFi Mode:");
-      // Serial.println(WiFi.getMode());
+      Serial.print("connecting...\n");
       // 连接时，闪烁
-      status = ~status;
-      setLEDStatus(status);
+      LEDstatus = ~LEDstatus;
+      setLEDStatus(LEDstatus);
     }
   }
   Serial.println("wifi connect Faild!");
@@ -503,7 +502,8 @@ void setup()
   // 初始化 WiFi 连接状态为未连接
   bool wifiConnected = false;
   // 连续连接10s
-  wifiConnected = waitForConnect(g_wifiSSID, g_wifiPassword);
+  // wifiConnected = waitForConnect(g_wifiSSID, g_wifiPassword);
+  wifiConnected = connect_WIFI(g_wifiSSID, g_wifiPassword);
 
   // 如果在规定的时间内未连接上 WiFi，则进入 AP 配置模式
   while (!wifiConnected)
