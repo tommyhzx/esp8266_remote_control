@@ -45,10 +45,12 @@ void clear_eeprom(int addr_length)
 // 从eeprom的相关地址获取ssid以及password内容
 void read_SSID_eeprom(String &ssid, String &pwd)
 {
+  EEPROM.begin(EEPROM_FULL_ADDR);
   ssid = readStringFromEEPROM(EEPROM_SSID_ADDR);
   pwd = readStringFromEEPROM(EEPROM_PASSWORD_ADDR);
   ssid.trim();
   pwd.trim();
+  EEPROM.end();
 }
 // 保存配置到EEPROM
 void save_config_EEPROM(String ssid, String password)
@@ -70,6 +72,7 @@ void save_config_EEPROM(String ssid, String password)
 // 连续复位3次则清除eeprom的内容
 void checkAndResetEEPROM()
 {
+  uint32_t resetTime = 0;
   // 连续复位3次，则回复出厂设置
   EEPROM.begin(EEPROM_FULL_ADDR);
   resetTime = EEPROM.read(EEPROM_RST_ADDR);

@@ -60,9 +60,7 @@ const int SWITCH_Pin = 2; // ESP-01s 连接开关的引脚 GPIO0
 const int LED_Status = 0; //
 // 主题名字，可在控制台新建
 String TOPIC2 = "light002"; // 用于led控制的主题
-//****************全局变量*********************//
-String g_wifiSSID = "";    //
-String g_wifiPassword = "";
+
 ///*********************************************///
 // led 控制函数
 #define LED_ON 0
@@ -206,9 +204,8 @@ void checkSwitchTimeout()
     switch_on = false;
   }
 }
-static int resetTime = 0;
-String test = "tommybei2";
-String test2 = "tommybei";
+String g_wifiSSID = ""; //
+String g_wifiPassword = "";
 // 初始化，相当于main 函数
 void setup()
 {
@@ -226,17 +223,10 @@ void setup()
   delay(15 * 1000);
   // 检查是否需要清除EEPROM
   checkAndResetEEPROM();
-
   // 当正常启动后，清除复位标志
   resetResetFlag();
-  // 测试
-  EEPROM.begin(EEPROM_FULL_ADDR);
-  writeStringToEEPROM(EEPROM_SSID_ADDR, test);
-  writeStringToEEPROM(EEPROM_PASSWORD_ADDR, test2);
   // 先从EEPROM读取WIFI相关配置信息
   read_SSID_eeprom(wifiSSID, wifiPassword);
-  Serial.println("wifiSSID:" + wifiSSID);
-  Serial.println("wifiPassword:" + wifiPassword);
   Serial.println("start wifi connnect\n");
   // 初始化 WiFi 连接状态为未连接
   bool wifiConnected = false;
@@ -255,9 +245,7 @@ void setup()
       // 配置成AP模式，并获取ssid和password
       AP_config = config_AP(deviceSN, wifiSSID, wifiPassword);
     }
-    Serial.println("config_AP success!\n");
-    Serial.println("wifiSSID:" + wifiSSID);
-    Serial.println("wifiPassword:" + wifiPassword);
+    save_config_EEPROM(wifiSSID, wifiPassword);
     // 进入WIFI_STA模式再判断wifi状态
     wifiConnected = connect_WIFI(wifiSSID, wifiPassword);
   }
@@ -270,8 +258,8 @@ void loop()
   // 查询WIFI连接状态
   check_and_reconnect_wifi();
   // wifi连接的情况下，查询TCP连接状态
-  if (WiFi.status() == WL_CONNECTED){
+  if (WiFi.status() == WL_CONNECTED)
+  {
     doTCPClientTick();
   }
-  
 }

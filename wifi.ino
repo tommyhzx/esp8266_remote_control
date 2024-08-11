@@ -93,24 +93,9 @@ bool config_AP(String mac, String &wifi_ssid, String &wifi_pwd)
         const char *token = doc["token"];
         // const char* topic = doc["topic"];
 
-        // 将配置保存到EEPROM
-        EEPROM.begin(64);
-        writeStringToEEPROM(0, ssid);
-        writeStringToEEPROM(32, password);
-        if (EEPROM.commit())
-        {
-          Serial.println("EEPROM successfully committed");
-        }
-        else
-        {
-          Serial.println("ERROR! EEPROM commit failed");
-        }
-        EEPROM.end();
-        g_wifiSSID = ssid;
-        g_wifiPassword = password;
         wifi_ssid = ssid;
         wifi_pwd = password;
-
+        Serial.println("wifi_ssid:" + wifi_ssid + " wifi_pwd:" + wifi_pwd);     
         // 收到信息，并回复
         String ReplyBuffer = "{\"cmdType\":2,\"productId\":\"" + topic + "\",\"deviceName\":\"" + Name + "\",\"protoVersion\":\"" + proto + "\"}";
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
