@@ -470,7 +470,7 @@ String readStringFromEEPROM(int addr)
 
 static int resetTime = 0;
 String test = "tommybei2";
-String test2 = "tommybei";
+String test2 = "tommybei1";
 // 初始化，相当于main 函数
 void setup()
 {
@@ -508,13 +508,17 @@ void setup()
   // 如果在规定的时间内未连接上 WiFi，则进入 AP 配置模式
   while (!wifiConnected)
   {
-    // Serial.println("\r\nWiFi connection timeout. Entering AP configuration mode.");
     // setLEDStatus(LED_ON);
     // 进入 AP 配置模式,循环等待
-    apConfig(deviceSN);
-    // config_AP(deviceSN);
+    // apConfig(deviceSN);
+    bool AP_config = false;
+    while (AP_config == false)
+    {
+      AP_config = config_AP(deviceSN);
+    }
+    Serial.println("config_AP success!\n");
     // 进入WIFI_STA模式再判断wifi状态
-    wifiConnected = waitForConnect(g_wifiSSID, g_wifiPassword);
+    wifiConnected = connect_WIFI(g_wifiSSID, g_wifiPassword);
 
     // 若配网失败，重置标志位
     if (wifiConnected == false)
@@ -522,6 +526,7 @@ void setup()
       g_config_flag = 1;
     }
   }
+  
 
   // 失败指示灯
 }
