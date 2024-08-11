@@ -9,6 +9,27 @@
 #define RESET_THRESHOLD 3
 #define RESET_TIME_WINDOW 10000 // 10 seconds in milliseconds
 
+// 将字符串保存到EEPROM
+void writeStringToEEPROM(int addr, const String &str)
+{
+  for (unsigned int i = 0; i < str.length(); i++)
+  {
+    EEPROM.write(addr + i, str[i]);
+  }
+  EEPROM.write(addr + str.length(), '\0'); // 添加字符串结束符
+}
+// 从EEPROM中读取字符串
+String readStringFromEEPROM(int addr)
+{
+  String result = "";
+  char c;
+  while ((c = EEPROM.read(addr++)) != '\0')
+  {
+    result += c;
+  }
+  return result;
+}
+
 // 输入参数：地址长度，最大64
 void clear_eeprom(int addr_length)
 {

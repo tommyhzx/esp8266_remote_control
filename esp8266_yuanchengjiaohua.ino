@@ -61,7 +61,6 @@ const int LED_Status = 0; //
 // 主题名字，可在控制台新建
 String TOPIC2 = "light002"; // 用于led控制的主题
 //****************全局变量*********************//
-int g_taskStarted = false; // 是否启动TCPClient
 String g_wifiSSID = "";    //
 String g_wifiPassword = "";
 ///*********************************************///
@@ -297,95 +296,40 @@ void doWiFiTick()
 {
 
   static uint32_t lastWiFiCheckTick = 0;
+  String wifiSSID = "";
+  String wifiPassword = "";
   // 未连接1s重连
   if (WiFi.status() != WL_CONNECTED)
   {
     if (millis() - lastWiFiCheckTick > 1000)
     {
       lastWiFiCheckTick = millis();
+      Serial.println("WiFi not connected, reconnecting...");
       // 重新连接
-      startSTA(g_wifiSSID, g_wifiPassword);
-      Serial.printf("Heap size:%d\r\n", ESP.getFreeHeap());
+      read_SSID_eeprom(wifiSSID, wifiPassword);
+      startSTA(wifiSSID, wifiPassword);
     }
   }
   // 连接成功建立
   else
   {
-    if (g_taskStarted == false)
+    if (!TCPclient.connected())
     {
-      g_taskStarted = true;
-      Serial.print("\r\nGet IP Address: ");
-      Serial.println(WiFi.localIP());
+      Serial.print("\r\nGet IP Address: " + WiFi.localIP().toString());
       startTCPClient();
     }
   }
-}
-/**********************
- *  等待wifi连接
- ***********************/
-bool waitForConnect(String SSID, String password)
-{
-  bool wifiConnected = false;
-  int LEDstatus = 0;
-  startSTA(SSID, password);
-  uint32_t startConnectTime = millis();
-  while (millis() - startConnectTime < WIFI_CONNECT_TIMEOUT)
-  {
-    // 检查 WiFi 连接状态
-    if (WiFi.status() == WL_CONNECTED)
-    {
-      wifiConnected = true;
-      // 打印连接成功信息
-      Serial.println("\r\nWiFi connected successfully!");
-      Serial.print("IP Address: ");
-      Serial.println(WiFi.localIP());
-      // 如果成功连接上 WiFi，则启动 TCP 客户端
-      startTCPClient();
-      g_taskStarted = true;
-      setLEDStatus(LED_OFF);
-      return true;
-    }
-    else
-    {
-      // 如果未连接上 WiFi，则等待一段时间再重新检查
-      delay(1000);
-      Serial.print("connecting...\n");
-      // 连接时，闪烁
-      LEDstatus = ~LEDstatus;
-      setLEDStatus(LEDstatus);
-    }
-  }
-  Serial.println("wifi connect Faild!");
-  return false;
-}
-
-// 将字符串保存到EEPROM
-void writeStringToEEPROM(int addr, const String &str)
-{
-  for (unsigned int i = 0; i < str.length(); i++)
-  {
-    EEPROM.write(addr + i, str[i]);
-  }
-  EEPROM.write(addr + str.length(), '\0'); // 添加字符串结束符
-}
-// 从EEPROM中读取字符串
-String readStringFromEEPROM(int addr)
-{
-  String result = "";
-  char c;
-  while ((c = EEPROM.read(addr++)) != '\0')
-  {
-    result += c;
-  }
-  return result;
 }
 
 static int resetTime = 0;
 String test = "tommybei2";
-String test2 = "tommybei1";
+String test2 = "tommybei";
 // 初始化，相当于main 函数
 void setup()
 {
+  String wifiSSID = "";
+  String wifiPassword = "";
+
   Serial.begin(115200);
   // 初始化引脚为输出
   pinMode(SWITCH_Pin, OUTPUT);
@@ -394,7 +338,7 @@ void setup()
   SwitchSet(SWITCH_OFF);
 
   // 延迟16s，串口才能有打印
-  delay(15*1000);
+  delay(15 * 1000);
   // 检查是否需要清除EEPROM
   checkAndResetEEPROM();
 
@@ -405,32 +349,32 @@ void setup()
   writeStringToEEPROM(EEPROM_SSID_ADDR, test);
   writeStringToEEPROM(EEPROM_PASSWORD_ADDR, test2);
   // 先从EEPROM读取WIFI相关配置信息
-  read_SSID_eeprom(g_wifiSSID, g_wifiPassword);
-  Serial.println("g_wifiSSID:" + g_wifiSSID);
-  Serial.println("g_wifiPassword:" + g_wifiPassword);
+  read_SSID_eeprom(wifiSSID, wifiPassword);
+  Serial.println("wifiSSID:" + wifiSSID);
+  Serial.println("wifiPassword:" + wifiPassword);
   Serial.println("start wifi connnect\n");
   // 初始化 WiFi 连接状态为未连接
   bool wifiConnected = false;
   // 连续连接10s
-  wifiConnected = connect_WIFI(g_wifiSSID, g_wifiPassword);
+  wifiConnected = connect_WIFI(wifiSSID, wifiPassword);
 
   // 如果在规定的时间内未连接上 WiFi，则进入 AP 配置模式
   while (!wifiConnected)
   {
     bool AP_config = false;
-    String wifiSSID = "";
-    String wifiPassword = "";
+
     // 进入 AP 配置模式,循环等待
     while (AP_config == false)
     {
       // setLEDStatus(LED_ON);
-      AP_config = config_AP(deviceSN, wifiSSID, wifiSSID);
+      // 配置成AP模式，并获取ssid和password
+      AP_config = config_AP(deviceSN, wifiSSID, wifiPassword);
     }
     Serial.println("config_AP success!\n");
-    Serial.println(wifiSSID);
-    Serial.println(wifiPassword);
+    Serial.println("wifiSSID:" + wifiSSID);
+    Serial.println("wifiPassword:" + wifiPassword);
     // 进入WIFI_STA模式再判断wifi状态
-    wifiConnected = connect_WIFI(wifiSSID, wifiSSID);
+    wifiConnected = connect_WIFI(wifiSSID, wifiPassword);
   }
   // 失败指示灯
 }
