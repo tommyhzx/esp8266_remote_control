@@ -95,7 +95,6 @@ String type = "002";  // 设备类型，001插座设备，002灯类设备，003�
 String Name = "台灯"; // 设备昵称，可随意修改
 String proto = "3";   // 3是tcp设备端口8344,1是MQTT设备
 
-char g_config_flag = 1; // 判断是否配网
 WiFiUDP Udp;
 char packetBuffer[255]; // 发送数据包
 bool IsWartering = 0;   // 0表示没在浇花，1表示正在浇花
@@ -359,93 +358,6 @@ bool waitForConnect(String SSID, String password)
   Serial.println("wifi connect Faild!");
   return false;
 }
-/*********************************
- * softAP配网
- *
- **********************************/
-void apConfig(String mac)
-{
-  if (g_config_flag == 1)
-  {
-    WiFi.softAP("maoshushu_" + mac);
-    // 使用udp 8266端口
-    Udp.begin(8266);
-    Serial.println("Started Ap Config...");
-  }
-  String topic = mac;
-  // 如果未配网，开启AP配网，一直等待并接收配网信息
-  while (g_config_flag)
-  {
-    int packetSize = Udp.parsePacket();
-    if (packetSize)
-    {
-      Serial.print("Received packet of size ");
-      Serial.println(packetSize);
-      Serial.print("From ");
-      IPAddress remoteIp = Udp.remoteIP();
-      Serial.print(remoteIp);
-      Serial.print(", port ");
-      Serial.println(Udp.remotePort());
-
-      int len = Udp.read(packetBuffer, 255);
-      if (len > 0)
-      {
-        packetBuffer[len] = 0;
-      }
-      Serial.println("Contents:");
-      Serial.println(packetBuffer);
-      StaticJsonDocument<200> doc;
-
-      DeserializationError error = deserializeJson(doc, packetBuffer);
-      if (error)
-      {
-        Serial.print(F("deserializeJson() failed: "));
-        Serial.println(error.f_str());
-        return;
-      }
-      int cmdType = doc["cmdType"].as<int>();
-      ;
-
-      if (cmdType == 1)
-      {
-        const char *ssid = doc["ssid"];
-        const char *password = doc["password"];
-        const char *token = doc["token"];
-        // const char* topic = doc["topic"];
-        Serial.println(cmdType);
-        Serial.println(ssid);
-        Serial.println(password);
-        Serial.println(token);
-        // 将配置保存到EEPROM
-        EEPROM.begin(64);
-        writeStringToEEPROM(0, ssid);
-        writeStringToEEPROM(32, password);
-        if (EEPROM.commit())
-        {
-          Serial.println("EEPROM successfully committed");
-        }
-        else
-        {
-          Serial.println("ERROR! EEPROM commit failed");
-        }
-        EEPROM.end();
-        g_wifiSSID = ssid;
-        g_wifiPassword = password;
-        // 收到信息，并回复
-        String ReplyBuffer = "{\"cmdType\":2,\"productId\":\"" + topic + "\",\"deviceName\":\"" + Name + "\",\"protoVersion\":\"" + proto + "\"}";
-        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-        Udp.write(ReplyBuffer.c_str());
-        Udp.endPacket();
-      }
-      else if (cmdType == 3)
-      {
-        // 配网信息传递结束
-        g_config_flag = 0;
-        WiFi.softAPdisconnect(true);
-      }
-    }
-  }
-}
 
 // 将字符串保存到EEPROM
 void writeStringToEEPROM(int addr, const String &str)
@@ -481,8 +393,6 @@ void setup()
   setLEDStatus(LED_OFF);
   SwitchSet(SWITCH_OFF);
 
-  // 配置1表示没有配网
-  g_config_flag == 1;
   // 延迟16s，串口才能有打印
   delay(15*1000);
   // 检查是否需要清除EEPROM
@@ -502,32 +412,26 @@ void setup()
   // 初始化 WiFi 连接状态为未连接
   bool wifiConnected = false;
   // 连续连接10s
-  // wifiConnected = waitForConnect(g_wifiSSID, g_wifiPassword);
   wifiConnected = connect_WIFI(g_wifiSSID, g_wifiPassword);
 
   // 如果在规定的时间内未连接上 WiFi，则进入 AP 配置模式
   while (!wifiConnected)
   {
-    // setLEDStatus(LED_ON);
-    // 进入 AP 配置模式,循环等待
-    // apConfig(deviceSN);
     bool AP_config = false;
+    String wifiSSID = "";
+    String wifiPassword = "";
+    // 进入 AP 配置模式,循环等待
     while (AP_config == false)
     {
-      AP_config = config_AP(deviceSN);
+      // setLEDStatus(LED_ON);
+      AP_config = config_AP(deviceSN, wifiSSID, wifiSSID);
     }
     Serial.println("config_AP success!\n");
+    Serial.println(wifiSSID);
+    Serial.println(wifiPassword);
     // 进入WIFI_STA模式再判断wifi状态
-    wifiConnected = connect_WIFI(g_wifiSSID, g_wifiPassword);
-
-    // 若配网失败，重置标志位
-    if (wifiConnected == false)
-    {
-      g_config_flag = 1;
-    }
+    wifiConnected = connect_WIFI(wifiSSID, wifiSSID);
   }
-  
-
   // 失败指示灯
 }
 

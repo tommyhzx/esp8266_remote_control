@@ -43,7 +43,7 @@ bool connect_WIFI(String SSID, String password)
  * softAP配网
  *@return true:配网成功 false:配网失败
  **********************************/
-bool config_AP(String mac)
+bool config_AP(String mac, String &wifi_ssid, String &wifi_pwd)
 {
   char packetBuffer[255]; // 发送数据包
   String topic = mac;
@@ -100,6 +100,8 @@ bool config_AP(String mac)
         EEPROM.end();
         g_wifiSSID = ssid;
         g_wifiPassword = password;
+        wifi_ssid = ssid;
+        wifi_pwd = password;
 
         // 收到信息，并回复
         String ReplyBuffer = "{\"cmdType\":2,\"productId\":\"" + topic + "\",\"deviceName\":\"" + Name + "\",\"protoVersion\":\"" + proto + "\"}";
@@ -110,7 +112,6 @@ bool config_AP(String mac)
       else if (cmdType == 3)
       {
         // 配网信息传递结束
-        g_config_flag = 0;
         WiFi.softAPdisconnect(true);
         return true;
       }
