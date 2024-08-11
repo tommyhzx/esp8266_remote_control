@@ -81,8 +81,6 @@ String TcpClient_Buff = "";
 unsigned int TcpClient_BuffIndex = 0;
 unsigned long TcpClient_preTick = 0;
 unsigned long preHeartTick = 0;    // 心跳
-unsigned long preTCPStartTick = 0; // 连接
-bool preTCPConnected = false;
 unsigned long switch_on_tick = 0;
 int switch_on = false;
 
@@ -99,95 +97,39 @@ char packetBuffer[255]; // 发送数据包
 bool IsWartering = 0;   // 0表示没在浇花，1表示正在浇花
 /***************************************/
 
-// 相关函数初始化
-// 连接WIFI
-void doWiFiTick();
-void startSTA(String ssid, String password);
-
-// TCP初始化连接
-void doTCPClientTick();
-void startTCPClient();
-void sendtoTCPServer(String p);
-
-/*******************************************
- *发送数据到TCP服务器
- *******************************************/
-void sendtoTCPServer(String p)
-{
-
-  if (!TCPclient.connected())
-  {
-    Serial.println("Client is not readly");
-    return;
-  }
-  TCPclient.print(p);
-  // Serial.println("[Send to TCPServer]:String");
-  // Serial.println(p);
-}
-
-/*****************************************
- *初始化和服务器建立连接
- *****************************************/
-void startTCPClient()
-{
-  if (TCPclient.connect(TCP_SERVER_ADDR, atoi(TCP_SERVER_PORT)))
-  {
-    Serial.print("\nConnected to server:");
-    Serial.printf("%s:%d\r\n", TCP_SERVER_ADDR, atoi(TCP_SERVER_PORT));
-    // 首次连接上TCP时，先发布一次订阅
-    String tcpTemp = "";
-    tcpTemp = "cmd=1&uid=" + UID + "&topic=" + TOPIC + "\r\n";
-    sendtoTCPServer(tcpTemp);
-    Serial.println("first sbscrib" + tcpTemp);
-
-    preTCPConnected = true;
-    preHeartTick = millis();
-    TCPclient.setNoDelay(true);
-  }
-  else
-  {
-    Serial.print("Failed connected to server:");
-    Serial.println(TCP_SERVER_ADDR);
-    TCPclient.stop();
-    preTCPConnected = false;
-  }
-  preTCPStartTick = millis();
-}
-
 /*************************************************
  *检查数据，发送数据
  *************************************************/
 void doTCPClientTick()
 {
-  // 检查是否断开，断开后重连
-  if (WiFi.status() != WL_CONNECTED)
-    return;
+  // 重连时间
+  static uint32_t lastReconnectAttempt = 0;
+  // 心跳计数
+  static uint32_t preHeartTick = 0;
   // TCP客户端没有连接
   if (!TCPclient.connected())
   {
+    uint32_t currentMillis = millis();
 
-    if (preTCPConnected == true)
+    if (currentMillis - lastReconnectAttempt > 1 * 1000)
     {
-
-      preTCPConnected = false;
-      preTCPStartTick = millis();
-      Serial.println();
-      Serial.println("TCP Client disconnected.");
+      lastReconnectAttempt = currentMillis;
+      Serial.println("TCP Client is not connected. Attempting to connect...");
       TCPclient.stop();
-    }
-    else if (millis() - preTCPStartTick > 1 * 1000) // 重新连接
       startTCPClient();
+    }
   }
   else
   {
-    // 收数据
+    // 收发数据
     if (TCPclient.available())
     {
+      // 读取数据
       char c = TCPclient.read();
       TcpClient_Buff += c;
       TcpClient_BuffIndex++;
       TcpClient_preTick = millis();
-
+      // 当接收到的数据大于最大数据时，清空数据
       if (TcpClient_BuffIndex >= MAX_PACKETSIZE - 1)
       {
         TcpClient_BuffIndex = MAX_PACKETSIZE - 2;
@@ -214,8 +156,7 @@ void doTCPClientTick()
       // sendtoTCPServer(upstr);
       // upstr = "";
     }
-    // 读取数据并判断
-
+    // 当接收到数据时，且间隔大于200ms时，处理数据
     if ((TcpClient_Buff.length() >= 1) && (millis() - TcpClient_preTick >= 200))
     { // 当订阅后，其它设备发布信息将会自动接收
       TCPclient.flush();
@@ -276,12 +217,7 @@ void setLEDStatus(int status)
   digitalWrite(LED_Status, status);
 }
 
-void startSTA(String ssid, String password)
-{
-  WiFi.disconnect();
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid.c_str(), password.c_str());
-}
+
 
 /**************************************************************************
                                  WIFI
@@ -292,7 +228,7 @@ void startSTA(String ssid, String password)
   检查WiFi是否连接上，若连接成功启动TCP Client
   控制指示灯
 */
-void doWiFiTick()
+void check_and_reconnect_wifi()
 {
 
   static uint32_t lastWiFiCheckTick = 0;
@@ -308,15 +244,6 @@ void doWiFiTick()
       // 重新连接
       read_SSID_eeprom(wifiSSID, wifiPassword);
       startSTA(wifiSSID, wifiPassword);
-    }
-  }
-  // 连接成功建立
-  else
-  {
-    if (!TCPclient.connected())
-    {
-      Serial.print("\r\nGet IP Address: " + WiFi.localIP().toString());
-      startTCPClient();
     }
   }
 }
@@ -383,6 +310,10 @@ void setup()
 void loop()
 {
   // 查询WIFI连接状态
-  doWiFiTick();
-  doTCPClientTick();
+  check_and_reconnect_wifi();
+  // wifi连接的情况下，查询TCP连接状态
+  if (WiFi.status() == WL_CONNECTED){
+    doTCPClientTick();
+  }
+  
 }

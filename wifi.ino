@@ -3,6 +3,13 @@ void myFunction()
 {
   Serial.println("Hello from myFunction!");
 }
+// 开启sta模式，并连接wifi
+void startSTA(String ssid, String password)
+{
+  WiFi.disconnect();
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid.c_str(), password.c_str());
+}
 /**********************
  *  等待wifi连接
  ***********************/
