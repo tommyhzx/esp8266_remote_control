@@ -1,3 +1,4 @@
+#include <WiFiUDP.h>
 
 void myFunction()
 {
@@ -126,4 +127,30 @@ bool config_AP(String mac, String &wifi_ssid, String &wifi_pwd)
   }
   // 未完成配网
   return false;
+}
+
+/*
+  WiFiTick
+  检查是否需要初始化WiFi
+  检查WiFi是否连接上，若连接成功启动TCP Client
+  控制指示灯
+*/
+void check_and_reconnect_wifi()
+{
+
+  static uint32_t lastWiFiCheckTick = 0;
+  String wifiSSID = "";
+  String wifiPassword = "";
+  // 未连接1s重连
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    if (millis() - lastWiFiCheckTick > 1000)
+    {
+      lastWiFiCheckTick = millis();
+      Serial.println("WiFi not connected, reconnecting...");
+      // 重新连接
+      read_SSID_eeprom(wifiSSID, wifiPassword);
+      startSTA(wifiSSID, wifiPassword);
+    }
+  }
 }

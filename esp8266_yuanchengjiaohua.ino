@@ -72,15 +72,11 @@ String g_wifiPassword = "";
 // 设置上传速率2s（1s<=upDataTime<=60s）
 // 下面的2代表上传间隔是2秒
 #define upDataTime 2 * 1000
-
 // 最大字节数
 #define MAX_PACKETSIZE 512
 // tcp客户端相关初始化，默认即可
 WiFiClient TCPclient;
-String TcpClient_Buff = "";
-unsigned int TcpClient_BuffIndex = 0;
-unsigned long TcpClient_preTick = 0;
-unsigned long preHeartTick = 0;    // 心跳
+
 unsigned long switch_on_tick = 0;
 int switch_on = false;
 
@@ -105,7 +101,13 @@ void doTCPClientTick()
   // 重连时间
   static uint32_t lastReconnectAttempt = 0;
   // 心跳计数
-  static uint32_t preHeartTick = 0;
+  static unsigned long preHeartTick = 0;
+  // 接收数据间隔
+  static unsigned long TcpClient_preTick = 0;
+  // 接收数据index
+  static unsigned int TcpClient_BuffIndex = 0;
+  // 接收数据内容
+  static String TcpClient_Buff = "";
   // TCP客户端没有连接
   if (!TCPclient.connected())
   {
@@ -204,50 +206,6 @@ void checkSwitchTimeout()
     switch_on = false;
   }
 }
-// 控制开关
-void SwitchSet(int status)
-{
-  Serial.println("switch status is");
-  Serial.println(status);
-  digitalWrite(SWITCH_Pin, status);
-}
-// 控制指示灯
-void setLEDStatus(int status)
-{
-  digitalWrite(LED_Status, status);
-}
-
-
-
-/**************************************************************************
-                                 WIFI
-***************************************************************************/
-/*
-  WiFiTick
-  检查是否需要初始化WiFi
-  检查WiFi是否连接上，若连接成功启动TCP Client
-  控制指示灯
-*/
-void check_and_reconnect_wifi()
-{
-
-  static uint32_t lastWiFiCheckTick = 0;
-  String wifiSSID = "";
-  String wifiPassword = "";
-  // 未连接1s重连
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    if (millis() - lastWiFiCheckTick > 1000)
-    {
-      lastWiFiCheckTick = millis();
-      Serial.println("WiFi not connected, reconnecting...");
-      // 重新连接
-      read_SSID_eeprom(wifiSSID, wifiPassword);
-      startSTA(wifiSSID, wifiPassword);
-    }
-  }
-}
-
 static int resetTime = 0;
 String test = "tommybei2";
 String test2 = "tommybei";
